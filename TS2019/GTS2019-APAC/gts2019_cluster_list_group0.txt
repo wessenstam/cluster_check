@@ -1,0 +1,10 @@
+10.42.37.37|techX2019!|nathan.cox@nutanix.com
+10.42.61.37|techX2019!|nathan.cox@nutanix.com
+10.42.81.37|techX2019!|nathan.cox@nutanix.com
+10.42.95.37|techX2019!|nathan.cox@nutanix.com
+10.42.4.37|techX2019!|nathan.cox@nutanix.com
+10.42.99.37|techX2019!|nathan.cox@nutanix.com
+10.42.75.37|techX2019!|nathan.cox@nutanix.com
+10.42.70.37|techX2019!|nathan.cox@nutanix.com
+10.42.69.37|techX2019!|nathan.cox@nutanix.com
+10.42.10.37|techX2019!|nathan.cox@nutanix.com
