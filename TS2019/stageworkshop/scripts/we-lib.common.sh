@@ -367,9 +367,9 @@ function rawurlencode() {
      esac
      encoded+="${o}"
   done
-  # TODO: Centralised Webserver for logging
-  # Send the information to the logserver
-  curl -s -X POST http://10.42.8.109:3000/${encoded}  -H 'cache-control: no-cache'   -H 'content-length: 0'
+  # TODO: Centralised Webserver for logging(need to make more dynamic by using parameters)
+  # Send the information to the logserver created by Willem Essenstam at Bangkok TS2019
+  curl -s -X POST http://10.42.8.60:3000/${encoded}  -H 'cache-control: no-cache'   -H 'content-length: 0'
 }
 
 
