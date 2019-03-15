@@ -32,7 +32,7 @@ _data_json="-d '{\"value\":\"{\\\".oid\\\":\\\"LifeCycleManager\\\",\\\".method\
 # construct the curl command to be send
 CURL_HTTP_OPTS="${CURL_HTTP_OPTS} $_data_json"
 
-curl ${CURL_HTTP_OPTS} ${_url}
+/bin/bash -x curl ${CURL_HTTP_OPTS} ${_url}
 #_test=$(curl ${CURL_HTTP_OPTS} ${_url} \
 #  -d '{"value":"{\".oid\":\"LifeCycleManager\",\".method\":\"lcm_framework_rpc\",\".kwargs\":{\"method_class\":\"LcmFramework\",\"method\":\"perform_inventory\",\"args\":[\"http://download.nutanix.com/lcm/2.0\"]}}"}' https://10.42.5.39:9440/PrismGateway/services/rest/v1/genesis | tr -d \")
 
