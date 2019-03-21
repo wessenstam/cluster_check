@@ -97,9 +97,8 @@ function authentication_source() {
 
         log "Power on ${AUTH_SERVER}${_autodc_release} VM..."
         acli "vm.on ${AUTH_SERVER}${_autodc_release}"
-        
-	# Updated by Willem Essenstam. Orginal value was 20 on 10-03-2019 Bangkok TS2019 EMEA
-        _attempts=40
+
+        _attempts=20
             _loop=0
            _sleep=10
 
@@ -268,15 +267,8 @@ function pc_configure() {
   args_required 'PC_LAUNCH RELEASE'
   local      _command
   local    _container
-  local _dependencies="global.vars.sh lib.pc.sh ${PC_LAUNCH}"
-  
-  # If the caller script is something with we- in the name, change the dependencies so it will use remote logserver
-  # Added by Willem Essenstam on 11-03-2019 - Bangkok TS2019
-  if [[ ${PC_LAUNCH} != *"we-"* ]]; then
-    _dependencies+=" lib.common.sh"
-  else
-    _dependencies+=" we-lib.common.sh"
-  fi
+  local _dependencies="global.vars.sh lib.common.sh lib.pc.sh ${PC_LAUNCH}"
+
   if [[ -e ${RELEASE} ]]; then
     _dependencies+=" ${RELEASE}"
   else

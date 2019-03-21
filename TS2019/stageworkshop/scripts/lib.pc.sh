@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+65#!/usr/bin/env bash
 # -x
 # Dependencies: curl, ncli, nuclei, jq
 
@@ -70,23 +70,52 @@ function flow_enable() {
   nuclei microseg.get_status 2>/dev/null
 }
 
+###############################################################################################################################################################################
+# Routine to be run/loop till yes we are ok.
+###############################################################################################################################################################################
+function loop(){
+
+  local _attempts=40
+  local _error=22
+  local _loops=0
+  local _sleep=30
+
+  # What is the progress of the taskid?? 
+  while true; do
+    (( _loop++ ))
+    # Get the progress of the task  
+    _progress=$(curl ${CURL_HTTP_OPTS} --user ${PRISM_ADMIN}:${PE_PASSWORD} ${_url_progress}?filterCriteria=parent_task_uuid%3D%3D${_task_id} | jq '.entities[0].percentageCompleted' 2>nul | tr -d \")
+    if (( ${_progress} == 100 )); then
+      log "The step has been succesfuly run"
+      set _error=0
+      break;
+    elif (( ${_loop} > ${_attempts} )); then
+      log "Warning ${_error} @${1}: Giving up after ${_loop} tries."
+      return ${_error}
+    else
+      log "Still running... loop $_loop/$_attempts. Step is at ${_progress}% ...Sleeping ${_sleep} seconds"
+      sleep ${_sleep}
+    fi
+  done
+}
+
+
 function lcm() {
-  local  _http_body
-  local _pc_version
-  local       _test
 
-  # shellcheck disable=2206
-  _pc_version=(${PC_VERSION//./ })
+# Inventory download/run
+_task_id=$(curl ${CURL_HTTP_OPTS} --user ${PRISM_ADMIN}:${PE_PASSWORD} -X POST -d '{"value":"{\".oid\":\"LifeCycleManager\",\".method\":\"lcm_framework_rpc\",\".kwargs\":{\"method_class\":\"LcmFramework\",\"method\":\"perform_inventory\",\"args\":[\"http://download.nutanix.com/lcm/2.0\"]}}"}' ${_url_lcm} | jq '.value' 2>nul | cut -d "\\" -f 4 | tr -d \")
 
-  if (( ${_pc_version[0]} >= 5 && ${_pc_version[1]} >= 9 )); then
-    log "PC_VERSION ${PC_VERSION} >= 5.9, starting LCM inventory..."
+# If there has been a reply (task_id) then the URL has accepted by PC
+if [ -z "$_task_id" ]; then
+  log "LCM Inventory start has encountered an eror..."
+else 
+  log "LCM Inventory started.."
+  set _loops=0 # Reset the loop counter
 
-    _http_body='value: "{".oid":"LifeCycleManager",".method":"lcm_framework_rpc",".kwargs":{"method_class":"LcmFramework","method":"perform_inventory","args":["http://download.nutanix.com/lcm/2.0"]}}"'
+ # Run the progess checker
+ loop
+fi
 
-    _test=$(curl ${CURL_HTTP_OPTS} --user ${PRISM_ADMIN}:${PE_PASSWORD} -X POST --data "${_http_body}" \
-      https://localhost:9440/PrismGateway/services/rest/v1/genesis)
-    log "inventory _test=|${_test}|"
-  fi
 }
 
 function pc_admin() {
