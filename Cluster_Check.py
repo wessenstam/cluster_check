@@ -196,7 +196,7 @@ def CheckRoutine(clusterIP):
     bs_data=requests.get(URL,verify=False,auth=(username,passwd))
     bs_content=BeautifulSoup(bs_data.content, 'html.parser')
     try:
-        if 'var CALM_VERSION = \'2.4.0\' || \'Unknown\';' in bs_content.script.string:
+        if 'var CALM_VERSION = \'2.6.0.3\' || \'Unknown\';' in bs_content.script.string:
             print('Check OK...')
     except:
         print('ERROR FOUND:')
