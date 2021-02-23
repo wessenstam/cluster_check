@@ -43,3 +43,4 @@ Thumbs.db
 # _build Directories #
 ######################
 _build
+.idea
