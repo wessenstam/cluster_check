@@ -10,7 +10,7 @@ requests.packages.urllib3.disable_warnings()
 ########################################################
 
 username='admin'
-passwd='techX2019!'
+passwd='ntnxGTS2021!'
 NetworkCheck=False
 Image_check=False
 PrimNet=['50','125']
@@ -34,11 +34,20 @@ def PrintSeperator(module):
     return
 
 # Function for checking URLs
-def CheckURL(URL,username,passwd):
-    # Get the anwser from the URL
-    anwser=requests.get(URL,verify=False,auth=(username,passwd),timeout=5)
+def CheckURL(URL,username,passwd,payload,method):
+    if method=="GET":
+        # Get the anwser from the URL
+        headers = {"Content-Type": "application/json"}
+        anwser=requests.get(URL,verify=False,auth=(username,passwd),timeout=15,headers=headers)
+    else:
+        headers={"Content-Type": "application/json"}
+        anwser = requests.post(URL, verify=False, auth=(username, passwd), timeout=5,data=payload,headers=headers)
+
     try:
-        json_data=json.loads(anwser.text)[0]
+        if "era/v0.9" in URL:
+            json_data=json.loads(anwser.text)
+        else:
+            json_data = json.loads(anwser.text)[0]
         return json_data
     except KeyError:
         json_data=json.loads(anwser.text)
@@ -61,9 +70,10 @@ def CheckRoutine(clusterIP):
 
     # Url to be checked
     URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v1/multicluster/cluster_external_state"
-
+    payload=""
+    method="GET"
     # Call the URL Get function
-    json_data=CheckURL(URL,username,passwd)
+    json_data=CheckURL(URL,username,passwd,payload,method)
 
     # If data is not a JSON file, we continue the line
     if 'Error' in json_data:
@@ -78,68 +88,6 @@ def CheckRoutine(clusterIP):
     else:
         print('ERROR FOUND! There is an issue with cluster ' + clusterIP + ' and PC')
 
-    # -----------------------------------------------------------------
-    # Check to see if the AFS is downloaded and ready to be deployed???
-    # -----------------------------------------------------------------
-    PrintSeperator('Nutanix Files pre-requirements')
-
-    # Url to be checked
-    URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v1/upgrade/afs/softwares"
-
-    # Get the anwser json from the API call
-    json_data=CheckURL(URL,username,passwd)
-
-    # Get the entities and transform into a dictionary for searching
-    json_dict=dict(json_data['entities'][5])
-
-    # If all loaded and completed all good...
-    if json_dict['version'] == '3.2.0.1' and json_dict['status'] == 'COMPLETED':
-        print('Check OK...')
-    else:
-        print("Issue seen at AFS... Please check.")
-        print('Version: ' + json_dict['version'] + " Status = " + json_dict['status'])
-
-    # -----------------------------------------------------------------
-    # Check to see if the AFS is downloaded and ready to be deployed???
-    # -----------------------------------------------------------------
-    PrintSeperator('Images on the clusters..')
-
-    # Url to be checked
-    URL="https://"+clusterIP+":9440/PrismGateway//services/rest/v2.0/images/"
-
-    # Get the anwser json from the API call
-    json_data=CheckURL(URL,username,passwd)
-
-    # How much images do we have?
-    images_dict=json_data['metadata']
-    images_nr=images_dict['grand_total_entities']
-
-    # minimum amount of images must be 15!!! If not check the name and type
-    if images_nr >= 15:
-        for image in range(int(images_nr)):
-            if '.iso' in dict(json_data['entities'][image])['name']:
-                if dict(json_data['entities'][image])['image_type']=='ISO_IMAGE':
-                    Image_check=True
-                else:
-                    Image_check=False
-                    print('ERROR FOUND:')
-                    print('Name is :' + dict(json_data['entities'][image])['name'] + ', type= ' + dict(json_data['entities'][image])['image_type'])
-            elif any(x in dict(json_data['entities'][image])['name'] for x in imagename):
-                if dict(json_data['entities'][image])['image_type']=='DISK_IMAGE':
-                    Image_check=True
-                else:
-                    Image_check=False
-                    print('ERROR FOUND:')
-                    print('Name is :' + dict(json_data['entities'][image])['name'] + ', type= ' + dict(json_data['entities'][image])['image_type'])
-        # If the images check out and their type, print all good!        
-        if Image_check:
-            print('Check OK...')
-    else:
-        # Not ok. The minimum amount of 15 has not been seen. Print a full list of the images available
-        print('ERROR FOUND: To little images (' + str(images_nr) +') found.. The following images have been found....')
-        for image in range(int(images_nr)):
-
-            print('Name is :' + dict(json_data['entities'][image])['name'] + ', type= ' + dict(json_data['entities'][image])['image_type'])
 
     # -----------------------------------------
     # Check to see if the network defined is ok
@@ -148,9 +96,10 @@ def CheckRoutine(clusterIP):
 
     # Url to be checked
     URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v2.0/networks/"
-
+    payload = ""
+    method = "GET"
     # Get the anwser json from the API call
-    json_data=CheckURL(URL,username,passwd)
+    json_data=CheckURL(URL,username,passwd,payload,method)
 
 
     # Check all the networks that have been defined.
@@ -182,26 +131,157 @@ def CheckRoutine(clusterIP):
         print('Check OK...')
 
     # -----------------------------------------
-    # Check to see if Calm is installed
+    # Check to see if Calm has 4 BPS
     # -----------------------------------------
-    PrintSeperator('Checking Calm..')
+    PrintSeperator('Checking Calm BPs..')
 
     # PRISM Central is 2 higher than the last octet of the ClusterIP
     PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
 
     # URL to be used
-    URL='https://'+PCIP+':9440/apps/projects'
+    URL='https://'+PCIP+':9440/api/nutanix/v3/blueprints/list'
+    payload = "{}"
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int(json_data['metadata']['total_matches']) < 4:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
 
-    # Get the response from the site
-    bs_data=requests.get(URL,verify=False,auth=(username,passwd))
-    bs_content=BeautifulSoup(bs_data.content, 'html.parser')
-    try:
-        if 'var CALM_VERSION = \'2.6.0.3\' || \'Unknown\';' in bs_content.script.string:
-            print('Check OK...')
-    except:
-        print('ERROR FOUND:')
-        print('Calm has not been found or is not enabled...')
+    # -----------------------------------------
+    # Check to see if Calm has 16 Apps
+    # -----------------------------------------
+    PrintSeperator('Checking Calm Apps..')
 
+    # PRISM Central is 2 higher than the last octet of the ClusterIP
+    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+
+    # URL to be used
+    URL='https://'+PCIP+':9440/api/nutanix/v3/apps/list'
+    payload = "{}"
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int(json_data['metadata']['total_matches']) < 16:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+    # -----------------------------------------
+    # Check to see if there is a objects store
+    # -----------------------------------------
+    PrintSeperator('Checking Objects store..')
+
+    # PRISM Central is 2 higher than the last octet of the ClusterIP
+    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+
+    # URL to be used
+    URL='https://'+PCIP+':9440/oss/api/nutanix/v3/groups'
+    payload = '{"entity_type":"objectstore"}'
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int(json_data['filtered_entity_count']) < 1:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+    # -----------------------------------------
+    # Check to see if there are 54 VMs
+    # -----------------------------------------
+    PrintSeperator('Checking Amount of VMS..')
+
+    # PRISM Central is 2 higher than the last octet of the ClusterIP
+    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+
+    # URL to be used
+    URL='https://'+PCIP+':9440/api/nutanix/v3/vms/list'
+    payload = '{"kind":"vm"}'
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int(json_data['metadata']['total_matches']) < 54:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+    # -----------------------------------------
+    # Check to see if Era has 5 Compute profiles
+    # -----------------------------------------
+    PrintSeperator('Checking Era on 5 Compute profiles..')
+
+    # Era IP is 7 higher than the last octet of the ClusterIP
+    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
+
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Compute'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int((len(json_data))) < 5:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+    # -----------------------------------------
+    # Check to see if Era has 5 Network profiles
+    # -----------------------------------------
+    PrintSeperator('Checking Era on 5 network profiles..')
+
+    # Era IP is 7 higher than the last octet of the ClusterIP
+    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
+
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Network'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int((len(json_data))) < 5:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+
+    # -----------------------------------------
+    # Check to see if Era has 7 DB Servers
+    # -----------------------------------------
+    PrintSeperator('Checking Era on 7 registered DB servers..')
+
+    # Era IP is 7 higher than the last octet of the ClusterIP
+    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
+
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/dbservers'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int((len(json_data))) < 7:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
+
+    # -----------------------------------------
+    # Check to see if Era has 7 DBs
+    # -----------------------------------------
+    PrintSeperator('Checking Era on 7 registered DBs..')
+
+    # Era IP is 7 higher than the last octet of the ClusterIP
+    ERA_IP = clusterIP[:-2] + str(int(clusterIP[-2:]) + 7)
+
+    # URL to be used
+    URL = 'https://' + ERA_IP + '/era/v0.9/databases'
+    payload = ""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd, payload, method)
+    if int((len(json_data))) < 7:
+        print('Check NOK...')
+    else:
+        print('Check OK...')
 
 
 ########################################################
