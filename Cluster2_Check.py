@@ -190,6 +190,20 @@ def CheckRoutine(clusterIP):
 
 
     # -----------------------------------------
+    # Check to see if Era has 12 Software profiles
+    # -----------------------------------------
+    
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Software'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if int((len(json_data))) < 12:
+        PrintSeperator('Checking Era on 12 software profile..')
+        print('Check NOK...')
+
+    # -----------------------------------------
     # Check to see if Era has 7 DB Servers
     # -----------------------------------------
     
