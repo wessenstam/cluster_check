@@ -65,6 +65,7 @@ def CheckRoutine(clusterIP):
     method="GET"
     json_data=CheckURL(URL,username,passwd,payload,method)
     ERA_IP=json_data['clusterDetails']['ipAddresses'][0][:-2]+"43"
+    
 
     ########################################################
     PrintSeperator(clusterIP)
@@ -93,6 +94,7 @@ def CheckRoutine(clusterIP):
     if not json_dict['reachable']:
         PrintSeperator('PRISM Central connectivity')
         print('ERROR FOUND! There is an issue with cluster ' + clusterIP + ' and its PC')
+
 
     # -----------------------------------------
     # Check to see if the Name fo the cluster is ok
@@ -156,10 +158,10 @@ def CheckRoutine(clusterIP):
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
     if len(json_data) < 2:
-        PrintSeperator('Checking Era on 2 IDs (did AWS) Register..')
+        PrintSeperator('Checking Era on 2 IDs (did AWS Register)..')
         print('Check NOK...')
 
-
+"""
     # -----------------------------------------
     # Check to see if Era has 4 Compute profiles
     # -----------------------------------------
@@ -185,7 +187,7 @@ def CheckRoutine(clusterIP):
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
     if int((len(json_data))) < 2:
-        PrintSeperator('Checking Era on 1 network profile..')
+        PrintSeperator('Checking Era on 2 network profile..')
         print('Check NOK...')
 
 
@@ -229,7 +231,7 @@ def CheckRoutine(clusterIP):
     json_data = CheckURL(URL, username, passwd, payload, method)
     if int((len(json_data))) < 7:
         PrintSeperator('Checking Era on 7 registered DBs..')
-        print('Check NOK...')
+        print('Check NOK...')"""
 
 
 ########################################################
