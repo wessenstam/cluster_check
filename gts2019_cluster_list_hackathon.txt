@@ -1,4 +1,0 @@
-10.42.67.37|techX2019!|nathan.cox@nutanix.com
-10.42.94.37|techX2019!|nathan.cox@nutanix.com
-10.42.102.37|techX2019!|nathan.cox@nutanix.com
-10.42.104.37|techX2019!|nathan.cox@nutanix.com
