@@ -59,6 +59,13 @@ def CheckURL(URL,username,passwd,payload,method):
 # Main routine to be run
 def CheckRoutine(clusterIP):
 
+    # Get the ERA IP
+    URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v1/multicluster/cluster_external_state"
+    payload=""
+    method="GET"
+    json_data=CheckURL(URL,username,passwd,payload,method)
+    ERA_IP=json_data['clusterDetails']['ipAddresses'][0][:-2]+"43"
+
     ########################################################
     PrintSeperator(clusterIP)
     ########################################################
@@ -66,14 +73,14 @@ def CheckRoutine(clusterIP):
     # -------------------------------------------------
     # PC Registered and reachable???
     # -------------------------------------------------
-    PrintSeperator('PRISM Central connectivity')
+    
 
     # Url to be checked
     URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v1/multicluster/cluster_external_state"
     payload=""
     method="GET"
     # Call the URL Get function
-    json_data=CheckURL(URL,username,passwd,payload,method)
+    json_data=CheckURL(URL,username,passwd,payload,method) 
 
     # If data is not a JSON file, we continue the line
     if 'Error' in json_data:
@@ -83,16 +90,30 @@ def CheckRoutine(clusterIP):
     # Get the result into a dict so we can search for the right key and value
     json_dict=dict(json_data['clusterDetails'])
 
-    if json_dict['reachable']:
-        print("Check OK...")
-    else:
-        print('ERROR FOUND! There is an issue with cluster ' + clusterIP + ' and PC')
+    if not json_dict['reachable']:
+        PrintSeperator('PRISM Central connectivity')
+        print('ERROR FOUND! There is an issue with cluster ' + clusterIP + ' and its PC')
+
+    # -----------------------------------------
+    # Check to see if the Name fo the cluster is ok
+    # -----------------------------------------
+    
+
+    # Url to be checked
+    URL="https://"+clusterIP+":9440/api/nutanix/v3/clusters/list"
+    payload = "{}"
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data=CheckURL(URL,username,passwd,payload,method)
+    if len(json_data['entities'][0]['status']['name']) > 15:
+        PrintSeperator('AWS cluster naming')
+        print('AWS Cluster ' + clusterIP + ' hasnot been renamed')
 
 
     # -----------------------------------------
     # Check to see if the network defined is ok
     # -----------------------------------------
-    PrintSeperator('Networking on the clusters..')
+    
 
     # Url to be checked
     URL="https://"+clusterIP+":9440/PrismGateway/services/rest/v2.0/networks/"
@@ -103,97 +124,16 @@ def CheckRoutine(clusterIP):
 
 
     # Check all the networks that have been defined.
-    # Get the number of networks
-    for nr in range(int(dict(json_data['metadata'])['total_entities'])) :
-        # print name of the network
-        if json_data['entities'][nr]['name'] == 'Primary':
-            if any(x in dict(json_data['entities'][nr]['ip_config'])['pool'][0]['range'] for x in PrimNet):
-                NetworkCheck=True
-            else:
-                NetworkCheck=False
-                print('ERROR FOUND:')
-                print('Name is :' + json_data['entities'][nr]['name'] + ', IP Range= ' + dict(json_data['entities'][nr]['name']))
-        elif json_data['entities'][nr]['name'] == 'Secondary':
-            if any(x in dict(json_data['entities'][nr]['ip_config'])['pool'][0]['range'] for x in SecNet):
-                NetworkCheck=True
-            else:
-                NetworkCheck=False
-                print('ERROR FOUND:')
-                print('Name is :' + json_data['entities'][nr]['name'] + ', IP Range= ' + dict(json_data['entities'][nr]['ip_config'])['pool'][0]['range'])
-        else:
-            print('ERROR FOUND:')
-            try:
-                print('Name is :' + json_data['entities'][nr]['name'] + ', IP Range= ' + dict(json_data['entities'][nr]['ip_config'])['pool'][0]['range'])
-            except:
-                print('Name is :' + json_data['entities'][nr]['name'])
-
-    if NetworkCheck:
-        print('Check OK...')
-
-    # -----------------------------------------
-    # Check to see if Calm has 4 BPS
-    # -----------------------------------------
-    PrintSeperator('Checking Calm BPs..')
-
-    # PRISM Central is 2 higher than the last octet of the ClusterIP
-    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
-
-    # URL to be used
-    URL='https://'+PCIP+':9440/api/nutanix/v3/blueprints/list'
-    payload = "{}"
-    method = "POST"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 4:
+    if int(dict(json_data['metadata'])['total_entities']) < 1:
+        PrintSeperator('Networking on the clusters..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
     # -----------------------------------------
-    # Check to see if Calm has 16 Apps
+    # Check to see if there are 2 VMs
     # -----------------------------------------
-    PrintSeperator('Checking Calm Apps..')
-
+    
     # PRISM Central is 2 higher than the last octet of the ClusterIP
-    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
-
-    # URL to be used
-    URL='https://'+PCIP+':9440/api/nutanix/v3/apps/list'
-    payload = "{}"
-    method = "POST"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 16:
-        print('Check NOK...')
-    else:
-        print('Check OK...')
-
-    # -----------------------------------------
-    # Check to see if there is a objects store
-    # -----------------------------------------
-    PrintSeperator('Checking Objects store..')
-
-    # PRISM Central is 2 higher than the last octet of the ClusterIP
-    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
-
-    # URL to be used
-    URL='https://'+PCIP+':9440/oss/api/nutanix/v3/groups'
-    payload = '{"entity_type":"objectstore"}'
-    method = "POST"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['filtered_entity_count']) < 1:
-        print('Check NOK...')
-    else:
-        print('Check OK...')
-
-    # -----------------------------------------
-    # Check to see if there are 54 VMs
-    # -----------------------------------------
-    PrintSeperator('Checking Amount of VMS..')
-
-    # PRISM Central is 2 higher than the last octet of the ClusterIP
-    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+    PCIP=clusterIP
 
     # URL to be used
     URL='https://'+PCIP+':9440/api/nutanix/v3/vms/list'
@@ -201,18 +141,28 @@ def CheckRoutine(clusterIP):
     method = "POST"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 54:
+    if int(json_data['metadata']['total_matches']) < 2:
+        PrintSeperator('Checking Amount of VMS..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
     # -----------------------------------------
-    # Check to see if Era has 5 Compute profiles
+    # Check to see if Era has 2 IDs that way we know AWS has registered to ERA instance
     # -----------------------------------------
-    PrintSeperator('Checking Era on 5 Compute profiles..')
 
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/clusters'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if len(json_data) < 2:
+        PrintSeperator('Checking Era on 2 IDs (did AWS) Register..')
+        print('Check NOK...')
+
+
+    # -----------------------------------------
+    # Check to see if Era has 4 Compute profiles
+    # -----------------------------------------
 
     # URL to be used
     URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Compute'
@@ -220,39 +170,29 @@ def CheckRoutine(clusterIP):
     method = "GET"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 5:
+    if int((len(json_data))) < 4:
+        PrintSeperator('Checking Era on 4 Compute profiles..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
     # -----------------------------------------
-    # Check to see if Era has 5 Network profiles
+    # Check to see if Era has 2 Network profiles
     # -----------------------------------------
-    PrintSeperator('Checking Era on 5 network profiles..')
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
-
+    
     # URL to be used
     URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Network'
     payload=""
     method = "GET"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 5:
+    if int((len(json_data))) < 2:
+        PrintSeperator('Checking Era on 1 network profile..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
 
     # -----------------------------------------
     # Check to see if Era has 7 DB Servers
     # -----------------------------------------
-    PrintSeperator('Checking Era on 7 registered DB servers..')
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+7)
-
+    
     # URL to be used
     URL='https://'+ERA_IP+'/era/v0.9/dbservers'
     payload=""
@@ -260,17 +200,12 @@ def CheckRoutine(clusterIP):
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
     if int((len(json_data))) < 7:
+        PrintSeperator('Checking Era on 7 registered DB servers..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
     # -----------------------------------------
     # Check to see if Era has 7 DBs
     # -----------------------------------------
-    PrintSeperator('Checking Era on 7 registered DBs..')
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP = clusterIP[:-2] + str(int(clusterIP[-2:]) + 7)
 
     # URL to be used
     URL = 'https://' + ERA_IP + '/era/v0.9/databases'
@@ -279,13 +214,12 @@ def CheckRoutine(clusterIP):
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd, payload, method)
     if int((len(json_data))) < 7:
+        PrintSeperator('Checking Era on 7 registered DBs..')
         print('Check NOK...')
-    else:
-        print('Check OK...')
 
 
 ########################################################
 # Main Routine
 ########################################################
-for IP in open('clusterIP.txt','r'):
+for IP in open('cluster2IP.txt','r'):
     CheckRoutine(IP.strip())
