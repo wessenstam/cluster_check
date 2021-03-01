@@ -109,7 +109,7 @@ def CheckRoutine(clusterIP):
     json_data=CheckURL(URL,username,passwd,payload,method)
     if len(json_data['entities'][0]['status']['name']) > 15:
         PrintSeperator('AWS cluster naming')
-        print('AWS Cluster ' + clusterIP + ' hasnot been renamed')
+        print('AWS Cluster ' + clusterIP + ' has not been renamed')
 
 
     # -----------------------------------------
@@ -161,7 +161,7 @@ def CheckRoutine(clusterIP):
         PrintSeperator('Checking Era on 2 IDs (did AWS Register)..')
         print('Check NOK...')
 
-"""
+
     # -----------------------------------------
     # Check to see if Era has 4 Compute profiles
     # -----------------------------------------
@@ -186,8 +186,8 @@ def CheckRoutine(clusterIP):
     method = "GET"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 2:
-        PrintSeperator('Checking Era on 2 network profile..')
+    if int((len(json_data))) < 1:
+        PrintSeperator('Checking Era on 1 network profile..')
         print('Check NOK...')
 
 
@@ -206,7 +206,7 @@ def CheckRoutine(clusterIP):
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if Era has 7 DB Servers
+    # Check to see if Era has 8 DB Servers
     # -----------------------------------------
     
     # URL to be used
@@ -215,8 +215,8 @@ def CheckRoutine(clusterIP):
     method = "GET"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 7:
-        PrintSeperator('Checking Era on 7 registered DB servers..')
+    if int((len(json_data))) < 8:
+        PrintSeperator('Checking Era on 8 registered DB servers..')
         print('Check NOK...')
 
     # -----------------------------------------
@@ -231,7 +231,7 @@ def CheckRoutine(clusterIP):
     json_data = CheckURL(URL, username, passwd, payload, method)
     if int((len(json_data))) < 7:
         PrintSeperator('Checking Era on 7 registered DBs..')
-        print('Check NOK...')"""
+        print('Check NOK...')
 
 
 ########################################################
