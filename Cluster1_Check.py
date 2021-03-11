@@ -14,7 +14,7 @@ passwd='ntnxGTS2021!'
 NetworkCheck=False
 Image_check=False
 PrimNet=['50','125']
-SecNet=['132','229']
+SecNet=['132','208']
 imagename=['.qcow2','AutoDC2','CentOS_7_Cloud','.vmdk','acs-centos']
 
 ########################################################
@@ -204,81 +204,8 @@ def CheckRoutine(clusterIP):
     method = "POST"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 52:
+    if int(json_data['metadata']['total_matches']) < 55:
         PrintSeperator('Checking Amount of VMS..')
-        print('Check NOK...')
-
-    # -----------------------------------------
-    # Check to see if Era has 4 Compute profiles
-    # -----------------------------------------
-    
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+6)
-
-    # URL to be used
-    URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Compute'
-    payload=""
-    method = "GET"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 4:
-        PrintSeperator('Checking Era on 4 Compute profiles..')
-        print('Check NOK...')
-
-    # -----------------------------------------
-    # Check to see if Era has 1 Network profiles
-    # -----------------------------------------
-    
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+6)
-
-    # URL to be used
-    URL='https://'+ERA_IP+'/era/v0.9/profiles?&type=Network'
-    payload=""
-    method = "GET"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 1:
-        PrintSeperator('Checking Era on 1 network profile..')
-        print('Check NOK...')
-
-
-    # -----------------------------------------
-    # Check to see if Era has 7 DB Servers
-    # -----------------------------------------
-    
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP=clusterIP[:-2]+str(int(clusterIP[-2:])+6)
-
-    # URL to be used
-    URL='https://'+ERA_IP+'/era/v0.9/dbservers'
-    payload=""
-    method = "GET"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if int((len(json_data))) < 7:
-        PrintSeperator('Checking Era on 7 registered DB servers..')
-        print('Check NOK...')
-
-    # -----------------------------------------
-    # Check to see if Era has 7 DBs
-    # -----------------------------------------
-    
-
-    # Era IP is 7 higher than the last octet of the ClusterIP
-    ERA_IP = clusterIP[:-2] + str(int(clusterIP[-2:]) + 6)
-
-    # URL to be used
-    URL = 'https://' + ERA_IP + '/era/v0.9/databases'
-    payload = ""
-    method = "GET"
-    # Get the anwser json from the API call
-    json_data = CheckURL(URL, username, passwd, payload, method)
-    if int((len(json_data))) < 7:
-        PrintSeperator('Checking Era on 7 registered DBs..')
         print('Check NOK...')
 
 

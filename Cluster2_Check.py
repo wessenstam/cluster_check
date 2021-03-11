@@ -64,7 +64,7 @@ def CheckRoutine(clusterIP):
     payload=""
     method="GET"
     json_data=CheckURL(URL,username,passwd,payload,method)
-    ERA_IP=json_data['clusterDetails']['ipAddresses'][0][:-2]+"43"
+    ERA_IP=clusterIP[:-1]+"209"
     
 
     ########################################################
@@ -131,7 +131,7 @@ def CheckRoutine(clusterIP):
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if there are 2 VMs
+    # Check to see if there are 4 VMs
     # -----------------------------------------
     
     # PRISM Central is 2 higher than the last octet of the ClusterIP
@@ -143,7 +143,7 @@ def CheckRoutine(clusterIP):
     method = "POST"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 2:
+    if int(json_data['metadata']['total_matches']) < 4:
         PrintSeperator('Checking Amount of VMS..')
         print('Check NOK...')
 
