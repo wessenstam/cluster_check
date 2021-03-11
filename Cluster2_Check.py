@@ -179,6 +179,7 @@ def CheckRoutine(clusterIP):
             print("We have found an issue with the Era agent: "+json_data[nr-1]['name']+" as its status is "+json_data[nr-1]['status']+ " on Era server "+ERA_IP)
             print('Check NOK...')
 
+
     # -----------------------------------------
     # Check to see if Era has the correct IP addresses for the clusters so the DAM Lab works
     # -----------------------------------------
@@ -232,6 +233,7 @@ def CheckRoutine(clusterIP):
         PrintSeperator('Checking Era on 4 Compute profiles..')
         print('Check NOK...')
 
+
     # -----------------------------------------
     # Check to see if Era has 1 Network profile
     # -----------------------------------------
@@ -261,6 +263,7 @@ def CheckRoutine(clusterIP):
         PrintSeperator('Checking Era on 12 software profile..')
         print('Check NOK...')
 
+
     # -----------------------------------------
     # Check to see if Era has 8 DB Servers
     # -----------------------------------------
@@ -274,6 +277,7 @@ def CheckRoutine(clusterIP):
     if int((len(json_data))) < 8:
         PrintSeperator('Checking Era on 8 registered DB servers..')
         print('Check NOK...')
+
 
     # -----------------------------------------
     # Check to see if Era has 7 DBs
