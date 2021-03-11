@@ -161,6 +161,22 @@ def CheckRoutine(clusterIP):
         PrintSeperator('Checking Era on 2 IDs (did AWS Register)..')
         print('Check NOK...')
 
+    
+    # -----------------------------------------
+    # Check to see if Era has 2 agents and they are up
+    # -----------------------------------------
+
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/clusters/agents/i/'
+    payload=""
+    method = "GET"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    for nr in range(len(json_data)):
+        if json_data[nr-1]['status'] != "UP":
+            PrintSeperator('Checking Era on 2 Agents and their status has to be UP..')
+            print("We have found an issue with the Era agent: "+json_data[nr-1]['name']+" as its status is "+json_data[nr-1]['status']+ " on Era server "+ERA_IP)
+            print('Check NOK...')
 
     # -----------------------------------------
     # Check to see if Era has 4 Compute profiles
@@ -177,7 +193,7 @@ def CheckRoutine(clusterIP):
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if Era has 2 Network profiles
+    # Check to see if Era has 1 Network profile
     # -----------------------------------------
     
     # URL to be used
