@@ -82,6 +82,7 @@ def CheckRoutine(clusterIP):
     method="GET"
     # Call the URL Get function
     json_data=CheckURL(URL,username,passwd,payload,method) 
+    pc_ip4aws=json_data['clusterDetails']['ipAddresses'][0]
 
     # If data is not a JSON file, we continue the line
     if 'Error' in json_data:
@@ -177,6 +178,45 @@ def CheckRoutine(clusterIP):
             PrintSeperator('Checking Era on 2 Agents and their status has to be UP..')
             print("We have found an issue with the Era agent: "+json_data[nr-1]['name']+" as its status is "+json_data[nr-1]['status']+ " on Era server "+ERA_IP)
             print('Check NOK...')
+
+    # -----------------------------------------
+    # Check to see if Era has the correct IP addresses for the clusters so the DAM Lab works
+    # -----------------------------------------
+
+    # URL to be used
+    URL='https://'+ERA_IP+'/era/v0.9/clusters'
+    payload=""
+    method = "GET"
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    uuid_list=[]
+    # Get the UUIDs of the registered Clusters in Era
+    for nr in range(len(json_data)):
+        if json_data[nr-1]['name'] == "AWS-Cluster":
+            aws_era_uuid=json_data[nr-1]['id']
+        elif json_data[nr-1]['name'] == "EraCluster":
+            hpoc_era_uuid=json_data[nr-1]['id']
+
+    uuid_list.append(aws_era_uuid)
+    uuid_list.append(hpoc_era_uuid)
+    
+    # Get the registered IP address from the PG per server fist AWS then HPOC
+    count=0
+    for uuid in uuid_list:
+        URL='https://'+ERA_IP+'/era/v0.9/clusters/i/'+uuid+'/json'
+        payload=""
+        method = "GET"
+        json_data = CheckURL(URL, username, passwd,payload,method)
+        ip_addr=json_data['ip_address']
+        if count==0:
+            if ip_addr != clusterIP:
+                PrintSeperator('Checking Era on Ip addresses in Table in PG..')
+                print('Check NOK... AWS side of the house')
+        else:
+            if ip_addr != pc_ip4aws[:-2]+"37":
+                PrintSeperator('Checking Era on IP addresses in Table in PG..')
+                print('Check NOK... HPOC side of the house')
+        count += 1
+    
 
     # -----------------------------------------
     # Check to see if Era has 4 Compute profiles
