@@ -58,6 +58,32 @@ def CheckURL(URL,username,passwd,payload,method):
         return_val='["Error"]'
         return return_val
 
+def openkarbon_ui(ip,user,passwd):
+    options=Options()
+    options.add_argument('--allow-running-insecure-content')
+    options.add_argument('--ignore-certificate-errors')
+    try:
+        driver = webdriver.Chrome("./chromedriver",options=options)
+        driver.get("https://"+ip+":9440/console/#page/karbon")
+        delay = 10
+        try:
+            myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.ID, 'inputUsername')))
+            time.sleep(5)
+            driver.find_element_by_id("inputUsername").send_keys(Keys.NULL)
+            driver.find_element_by_id("inputUsername").send_keys(user)
+            driver.find_element_by_id("inputUsername").send_keys(Keys.TAB)
+            time.sleep(1)
+            driver.find_element_by_id("inputPassword").send_keys(passwd)
+            driver.find_element_by_id("inputPassword").send_keys(Keys.ENTER)
+            time.sleep(20)
+            driver.quit()
+        except TimeoutException:
+            print("Loading took too much time!")
+            driver.quit()
+    except:
+            print("Cluster "+ip+" is not accesible...")
+            return "Fail"
+
 # Main routine to be run
 def CheckRoutine(clusterIP):
 
@@ -76,10 +102,13 @@ def CheckRoutine(clusterIP):
     method="GET"
     # Call the URL Get function
     json_data=CheckURL(URL,username,passwd,payload,method)
-
-    if int(json_data['entities'][0]['numNodes']) < 4:
-        PrintSeperator('Cluster nodes.')
-        print('ERROR FOUND! There are not 4 nodes in cluster with IP Address: ' + clusterIP)
+    try:
+        if int(json_data['entities'][0]['numNodes']) < 4:
+            PrintSeperator('Cluster nodes.')
+            print('ERROR FOUND! There are not 4 nodes in cluster with IP Address: ' + clusterIP)
+    except:
+        print("Couldn't get a connection to cluster "+clusterIP+". Please check the cluster...")
+        return
 
     # -------------------------------------------------
     # PC Registered and reachable???
@@ -95,7 +124,7 @@ def CheckRoutine(clusterIP):
 
     # If data is not a JSON file, we continue the line
     if 'Error' in json_data:
-        print('Have an issue connecting to the Cluster at ' + clusterIP)
+        print('Have an issue connecting to get the IP of the PC for Cluster at ' + clusterIP)
         return
     
     # Get the result into a dict so we can search for the right key and value
@@ -247,52 +276,58 @@ def CheckRoutine(clusterIP):
             if json_data['data']['task_uuid'] != "": # We have recieved a task_uuid, so all good
                 print('Countermeasure has started...')
                 karbon_nok[PCIP]=json_data['data']['task_uuid']
-                print("Checking later on cluster "+PCIP+" with job uuid"+karbon_nok[PCIP]+"... Moving on...")
-
-    print(karbon_nok)
+                print("Checking later on cluster "+PCIP+" with job uuid "+karbon_nok[PCIP]+"... Moving on...")
     
-    """# -----------------------------------------
+    # -----------------------------------------
     # Check to see if Karbon image is there
     # -----------------------------------------
-    
 
     # PRISM Central is 2 higher than the last octet of the ClusterIP
-    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+    PCIP = clusterIP[:-2] + str(int(clusterIP[-2:]) + 2)
 
     # URL to be used
-    URL='https://'+PCIP+':9440/karbon/acs/image/list'
+    URL = 'https://' + PCIP + ':9440/karbon/acs/image/list'
     payload = ''
     method = "GET"
-    print(URL)
-    json_data = CheckURL(URL, username, passwd,payload,method)
-    if json_data['image_uuid'] == "": # we don't have a karbon image in the system
+    json_data = CheckURL(URL, username, passwd, payload, method)
+    if 'Error' in json_data:
+        print("Unable to connect to "+PCIP)
+        return
+    if len(json_data) < 1:
+        return_code = openkarbon_ui(PCIP, username, passwd)
+        if return_code == "Fail":
+            return
+
+    URL = 'https://' + PCIP + ':9440/karbon/acs/image/list'
+    payload = ''
+    method = "GET"
+    json_data = CheckURL(URL, username, passwd, payload, method)
+    if json_data['image_uuid'] == "":  # we don't have a karbon image in the system
         PrintSeperator('Checking Karbon image available..')
         print('Check NOK... image is not detected')
         print('Starting counter measures...')
         # Get the UUID of the image to be downloaded
-        image_uuid=json_data['uuid']
+        image_uuid = json_data['uuid']
         # Now start the download
-        URL='https://'+PCIP+':9440/karbon/acs/image/download'
-        payload = '{"uuid":"'+image_uuid+'"}'
+        URL = 'https://' + PCIP + ':9440/karbon/acs/image/download'
+        payload = '{"uuid":"' + image_uuid + '"}'
         method = "POST"
-        json_data = CheckURL(URL, username, passwd,payload,method)
+        json_data = CheckURL(URL, username, passwd, payload, method)
         if json_data['image_uuid'] == "":
             print("Counter measurement have failed. Please use Karbon UI to rectify!..")
         else:
-            print("Counter measurements have started... Progress is in the Karbon UI..")"""
+            print("Counter measurements have started... Progress is in the Karbon UI..")
 
 
 ########################################################
 # Main Routine
 ########################################################
 for IP in open('clusterIP.1.txt','r'):
-    CheckRoutine(IP.strip())
+   CheckRoutine(IP.strip())
 
 # Do we have some Clusters that we need to check due to Karbon version mismatch?
-print(karbon_nok)
-print(len(karbon_nok))
 if len(karbon_nok) > 0:
-    for PCIP,uuid in karbon_nok:
+    for PCIP,uuid in karbon_nok.items():
         print("Checking cluster "+PCIP+" on its status for the Karbon Update")
         URL='https://'+PCIP+':9440/api/nutanix/v3/tasks/'+uuid
         payload=''
