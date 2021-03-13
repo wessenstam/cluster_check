@@ -1,6 +1,6 @@
 import requests
 import json
-from bs4 import BeautifulSoup
+import time
 
 # No warnings should be displayed on SSL certificates
 requests.packages.urllib3.disable_warnings()
@@ -41,7 +41,7 @@ def CheckURL(URL,username,passwd,payload,method):
         anwser=requests.get(URL,verify=False,auth=(username,passwd),timeout=15,headers=headers)
     else:
         headers={"Content-Type": "application/json"}
-        anwser = requests.post(URL, verify=False, auth=(username, passwd), timeout=5,data=payload,headers=headers)
+        anwser = requests.post(URL, verify=False, auth=(username, passwd), timeout=15,data=payload,headers=headers)
 
     try:
         if "era/v0.9" in URL:
@@ -207,6 +207,97 @@ def CheckRoutine(clusterIP):
     if int(json_data['metadata']['total_matches']) < 55:
         PrintSeperator('Checking Amount of VMS..')
         print('Check NOK...')
+
+
+    # -----------------------------------------
+    # Check to see which version of Karbon is 2.2.1
+    # -----------------------------------------
+    
+
+    # PRISM Central is 2 higher than the last octet of the ClusterIP
+    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+
+    # URL to be used
+    URL='https://'+PCIP+':9440/lcm/v1.r0.b1/resources/entities/list'
+    payload = '{"filter":"entity_model==Karbon"}'
+    method = "POST"
+    # Get the anwser json from the API call
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    KarbonVersion=json_data['data']['entities'][0]['version']
+    if KarbonVersion != "2.2.1":
+        PrintSeperator('Checking Karbon version..')
+        print('Check NOK... version '+KarbonVersion+' is detected')
+        print('Starting counter measures.....')
+        
+        # Get the uuid of Karbon
+        karbon_uuid=json_data['data']['entities'][0]['uuid']
+        
+        # Start the upgrade plan 
+        URL='https://'+PCIP+':9440/lcm/v1.r0.b1/resources/notifications'
+        payload='[{"version":"2.2.1","entity_uuid":"'+karbon_uuid+'"}]'
+        method = 'POST'
+        json_data = CheckURL(URL, username, passwd,payload,method)
+        print(json_data)
+        if json_data['data']['upgrade_plan'][0]['to_version'] == '2.2.1': # Accepted?
+            URL='https://'+PCIP+':9440/lcm/v1.r0.b1/operations/update'
+            payload='{"entity_update_spec_list":[{"version":"2.2.1","entity_uuid":"'+karbon_uuid+'"}]}'
+            method = 'POST'
+            json_data = CheckURL(URL, username, passwd,payload,method)
+            if json_data['data']['task_uuid'] != "": # We have recieved a task_uuid, so all good
+                print('Counter measurement has started...')
+                URL='https://'+PCIP+':9440/api/nutanix/v3/tasks/'+json_data['data']['task_uuid']
+                payload=''
+                method = 'GET'
+                json_data = CheckURL(URL, username, passwd,payload,method)
+                count=0
+                while json_data['status'] != "SUCCEEDED":
+                    print('Still running the upgrade... Sleep 30 sec')
+                    time.sleep(30)
+                    counter += 1
+                    if counter > 20:
+                        print('We tried 10 minutes, canceling...')
+                        break
+
+
+    """# -----------------------------------------
+    # Check to see if Karbon image is there
+    # -----------------------------------------
+    
+
+    # PRISM Central is 2 higher than the last octet of the ClusterIP
+    PCIP=clusterIP[:-2]+str(int(clusterIP[-2:])+2)
+
+    # URL to be used
+    URL='https://'+PCIP+':9440/karbon/acs/image/list'
+    payload = ''
+    method = "GET"
+    print(URL)
+    json_data = CheckURL(URL, username, passwd,payload,method)
+    if json_data['image_uuid'] == "": # we don't have a karbon image in the system
+        PrintSeperator('Checking Karbon image available..')
+        print('Check NOK... image is not detected')
+        print('Starting counter measures...')
+        # Get the UUID of the image to be downloaded
+        image_uuid=json_data['uuid']
+        # Now start the download
+        URL='https://'+PCIP+':9440/karbon/acs/image/download'
+        payload = '{"uuid":"'+image_uuid+'"}'
+        method = "POST"
+        json_data = CheckURL(URL, username, passwd,payload,method)
+        if json_data['image_uuid'] == "":
+            print("Counter measurement have failed. Please use Karbon UI to rectify!..")
+        else:
+            print("Counter measurements have started... Progress is in the Karbon UI..")"""
+
+
+
+
+
+                    
+                    
+                 
+
+    
 
 
 ########################################################
