@@ -17,6 +17,8 @@ PrimNet=['50','125']
 SecNet=['132','208']
 imagename=['.qcow2','AutoDC2','CentOS_7_Cloud','.vmdk','acs-centos']
 
+karbon_nok={}
+
 ########################################################
 # Functions Part
 ########################################################
@@ -123,7 +125,7 @@ def CheckRoutine(clusterIP):
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if Calm has 4 BPS
+    # Check to see if Calm has 3 BPS
     # -----------------------------------------
     
 
@@ -136,12 +138,12 @@ def CheckRoutine(clusterIP):
     method = "POST"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 4:
+    if int(json_data['metadata']['total_matches']) < 3:
         PrintSeperator('Checking Calm BPs..')
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if Calm has 16 Apps running
+    # Check to see if Calm has 9 Apps running
     # -----------------------------------------
   
 
@@ -165,7 +167,7 @@ def CheckRoutine(clusterIP):
             app_name.append(json_data['entities'][nr]['status']['name'])
             error_value += 1
 
-    if value < 16:
+    if value < 9:
         PrintSeperator('Checking Calm Apps..')
         for i in range(error_value):
             print ("App :"+app_name[i]+" is not in running state...")
@@ -191,7 +193,7 @@ def CheckRoutine(clusterIP):
         print('Check NOK...')
 
     # -----------------------------------------
-    # Check to see if there are 54 VMs
+    # Check to see if there are 28 VMs
     # -----------------------------------------
     
 
@@ -204,7 +206,7 @@ def CheckRoutine(clusterIP):
     method = "POST"
     # Get the anwser json from the API call
     json_data = CheckURL(URL, username, passwd,payload,method)
-    if int(json_data['metadata']['total_matches']) < 55:
+    if int(json_data['metadata']['total_matches']) < 28:
         PrintSeperator('Checking Amount of VMS..')
         print('Check NOK...')
 
@@ -227,7 +229,7 @@ def CheckRoutine(clusterIP):
     if KarbonVersion != "2.2.1":
         PrintSeperator('Checking Karbon version..')
         print('Check NOK... version '+KarbonVersion+' is detected')
-        print('Starting counter measures.....')
+        print('Starting countermeasure.....')
         
         # Get the uuid of Karbon
         karbon_uuid=json_data['data']['entities'][0]['uuid']
@@ -237,28 +239,18 @@ def CheckRoutine(clusterIP):
         payload='[{"version":"2.2.1","entity_uuid":"'+karbon_uuid+'"}]'
         method = 'POST'
         json_data = CheckURL(URL, username, passwd,payload,method)
-        print(json_data)
         if json_data['data']['upgrade_plan'][0]['to_version'] == '2.2.1': # Accepted?
             URL='https://'+PCIP+':9440/lcm/v1.r0.b1/operations/update'
             payload='{"entity_update_spec_list":[{"version":"2.2.1","entity_uuid":"'+karbon_uuid+'"}]}'
             method = 'POST'
             json_data = CheckURL(URL, username, passwd,payload,method)
             if json_data['data']['task_uuid'] != "": # We have recieved a task_uuid, so all good
-                print('Counter measurement has started...')
-                URL='https://'+PCIP+':9440/api/nutanix/v3/tasks/'+json_data['data']['task_uuid']
-                payload=''
-                method = 'GET'
-                json_data = CheckURL(URL, username, passwd,payload,method)
-                count=0
-                while json_data['status'] != "SUCCEEDED":
-                    print('Still running the upgrade... Sleep 30 sec')
-                    time.sleep(30)
-                    counter += 1
-                    if counter > 20:
-                        print('We tried 10 minutes, canceling...')
-                        break
+                print('Countermeasure has started...')
+                karbon_nok[PCIP]=json_data['data']['task_uuid']
+                print("Checking later on cluster "+PCIP+" with job uuid"+karbon_nok[PCIP]+"... Moving on...")
 
-
+    print(karbon_nok)
+    
     """# -----------------------------------------
     # Check to see if Karbon image is there
     # -----------------------------------------
@@ -290,18 +282,34 @@ def CheckRoutine(clusterIP):
             print("Counter measurements have started... Progress is in the Karbon UI..")"""
 
 
-
-
-
-                    
-                    
-                 
-
-    
-
-
 ########################################################
 # Main Routine
 ########################################################
-for IP in open('clusterIP.txt','r'):
+for IP in open('clusterIP.1.txt','r'):
     CheckRoutine(IP.strip())
+
+# Do we have some Clusters that we need to check due to Karbon version mismatch?
+print(karbon_nok)
+print(len(karbon_nok))
+if len(karbon_nok) > 0:
+    for PCIP,uuid in karbon_nok:
+        print("Checking cluster "+PCIP+" on its status for the Karbon Update")
+        URL='https://'+PCIP+':9440/api/nutanix/v3/tasks/'+uuid
+        payload=''
+        method = 'GET'
+        json_data = CheckURL(URL, username, passwd,payload,method)
+        counter=0
+        while json_data['status'] != "SUCCEEDED":
+            if json_data['status'] != "FAILED":
+                print('Still running the upgrade... Sleep 60 sec')
+                time.sleep(60)
+                counter += 1
+            else:
+                print('The upgrade job of Karbon Failed...')
+                break
+            if counter > 10:
+                print('We tried 10 minutes, canceling...')
+                break
+            json_data = CheckURL(URL, username, passwd,payload,method)
+                    
+                

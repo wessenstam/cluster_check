@@ -297,5 +297,5 @@ def CheckRoutine(clusterIP):
 ########################################################
 # Main Routine
 ########################################################
-for IP in open('cluster2IP.txt','r'):
+for IP in open('clusterIP.2.txt','r'):
     CheckRoutine(IP.strip())
