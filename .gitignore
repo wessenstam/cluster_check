@@ -46,4 +46,4 @@ Thumbs.db
 _build
 /.idea/*
 /venv/
-/.vscode/
+/.vscode/*
