@@ -44,5 +44,5 @@ Thumbs.db
 # _build Directories #
 ######################
 _build
-.idea
+.idea/*
 /venv/
