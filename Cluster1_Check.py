@@ -1,6 +1,12 @@
 import requests
 import json
 import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
 # No warnings should be displayed on SSL certificates
 requests.packages.urllib3.disable_warnings()
@@ -54,10 +60,11 @@ def CheckURL(URL,username,passwd,payload,method):
     except KeyError:
         json_data=json.loads(anwser.text)
         return json_data
+    except IndexError:
+        json_data=json.loads(anwser.text)
     except:
         return_val='["Error"]'
         return return_val
-
 def openkarbon_ui(ip,user,passwd):
     options=Options()
     options.add_argument('--allow-running-insecure-content')
@@ -290,10 +297,11 @@ def CheckRoutine(clusterIP):
     payload = ''
     method = "GET"
     json_data = CheckURL(URL, username, passwd, payload, method)
-    if 'Error' in json_data:
+    print(json_data)
+    if 'Error' in str(json_data):
         print("Unable to connect to "+PCIP)
         return
-    if len(json_data) < 1:
+    if json_data is None:
         return_code = openkarbon_ui(PCIP, username, passwd)
         if return_code == "Fail":
             return
