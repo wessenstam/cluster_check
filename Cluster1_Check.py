@@ -297,7 +297,6 @@ def CheckRoutine(clusterIP):
     payload = ''
     method = "GET"
     json_data = CheckURL(URL, username, passwd, payload, method)
-    print(json_data)
     if 'Error' in str(json_data):
         print("Unable to connect to "+PCIP)
         return
